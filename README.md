@@ -6,7 +6,7 @@ Rust for the purposes of interaction with C++ dynamic libraries.
 ## Why?
 
 Are you getting hot and sweaty with a C++ dylib? Does the library expect you to
-pass in `std::function` objects? Do you under a religious obligation to not use
+pass in `std::function` objects? Are you under a religious obligation to not use
 any C++ glue code? In that case, cxxfn may be just what you're looking for.
 
 ## Why not?
