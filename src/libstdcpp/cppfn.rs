@@ -1,11 +1,11 @@
 use std::{hint::unreachable_unchecked, marker::PhantomData, mem::MaybeUninit};
 
-use super::{CapturedData, Invoker, Manager, fn_ref};
+use super::{Functor, Invoker, Manager, fn_ref};
 use crate::{ConvertArg, PunFn, libstdcpp::ManagerOperation};
 
 #[repr(C)]
 pub(crate) struct LibstdCppFn<'a, F: 'static + Copy> {
-    pub(crate) functor: CapturedData<'a>,
+    pub(crate) functor: Functor<'a>,
     manager: Option<Manager<Self>>,
     invoker: Option<Invoker<Self>>,
     _marker: PhantomData<F>,
@@ -14,9 +14,8 @@ pub(crate) struct LibstdCppFn<'a, F: 'static + Copy> {
 impl<'a, R: 'static> LibstdCppFn<'a, fn() -> R> {
     #[inline]
     pub fn new<D: 'a + Clone>(data: D, f: fn(&D) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker =
             unsafe { core::mem::transmute::<_, Invoker<Self>>(fn_ref::f0::<D, R> as *const ()) };
         let manager =
@@ -44,9 +43,8 @@ impl<'a, R: 'static> LibstdCppFn<'a, fn() -> R> {
 impl<'a, R: 'static, A0: ConvertArg> LibstdCppFn<'a, fn(A0) -> R> {
     #[inline]
     pub fn new<D: 'a + Clone>(data: D, f: fn(&D, A0::Rust<'_>) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(fn_ref::f1::<D, R, A0> as *const ())
         };
@@ -77,7 +75,7 @@ impl<'a, R: 'static, A0: ConvertArg> LibstdCppFn<'a, fn(A0) -> R> {
 impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg> LibstdCppFn<'a, fn(A0, A1) -> R> {
     #[inline]
     pub fn new<D: 'a + Clone>(data: D, f: fn(&D, A0::Rust<'_>, A1::Rust<'_>) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
+        let functor = Functor::from_data_and_fn(data, unsafe {
             core::mem::transmute::<*const (), PunFn<'a>>(f as *const ())
         });
         let invoker = unsafe {
@@ -117,9 +115,8 @@ impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg, A2: ConvertArg>
         data: D,
         f: fn(&D, A0::Rust<'_>, A1::Rust<'_>, A2::Rust<'_>) -> R,
     ) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(fn_ref::f3::<D, R, A0, A1, A2> as *const ())
         };
@@ -156,9 +153,8 @@ impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg, A2: ConvertArg, A3: Convert
         data: D,
         f: fn(&D, A0::Rust<'_>, A1::Rust<'_>, A2::Rust<'_>, A3::Rust<'_>) -> R,
     ) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(
                 fn_ref::f4::<D, R, A0, A1, A2, A3> as *const (),
@@ -215,13 +211,13 @@ impl<'a, F: 'a + Copy> Clone for LibstdCppFn<'a, F> {
     fn clone(&self) -> Self {
         let Some(manager) = self.manager else {
             return Self {
-                functor: unsafe { MaybeUninit::<CapturedData<'a>>::zeroed().assume_init() },
+                functor: unsafe { MaybeUninit::<Functor<'a>>::zeroed().assume_init() },
                 manager: None,
                 invoker: None,
                 _marker: PhantomData,
             };
         };
-        let mut functor = MaybeUninit::<CapturedData<'a>>::uninit();
+        let mut functor = MaybeUninit::<Functor<'a>>::uninit();
         let _ = unsafe {
             manager(
                 functor.as_mut_ptr().cast(),

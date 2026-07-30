@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use super::{CapturedData, Invoker, Manager, ManagerOperation, cppfnmut::fn_mut_manager, fn_once};
+use super::{Functor, Invoker, Manager, ManagerOperation, cppfnmut::fn_mut_manager, fn_once};
 use crate::{ConvertArg, PunFn};
 
 #[repr(C)]
 pub(crate) struct LibstdCppFnOnce<'a, F: 'static + Copy> {
-    pub(crate) functor: CapturedData<'a>,
+    pub(crate) functor: Functor<'a>,
     manager: Option<Manager<Self>>,
     invoker: Option<Invoker<Self>>,
     _marker: PhantomData<F>,
@@ -21,9 +21,8 @@ impl<F: 'static + Copy> LibstdCppFnOnce<'_, F> {
 impl<'a, R: 'static> LibstdCppFnOnce<'a, fn() -> R> {
     #[inline]
     pub(crate) fn new<D: 'a>(data: D, f: fn(D) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker =
             unsafe { core::mem::transmute::<_, Invoker<Self>>(fn_once::f0::<D, R> as *const ()) };
         let manager =
@@ -51,9 +50,8 @@ impl<'a, R: 'static> LibstdCppFnOnce<'a, fn() -> R> {
 impl<'a, R: 'static, A0: ConvertArg> LibstdCppFnOnce<'a, fn(A0) -> R> {
     #[inline]
     pub(crate) fn new<D: 'a>(data: D, f: fn(D, A0::Rust<'_>) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(fn_once::f1::<D, R, A0> as *const ())
         };
@@ -84,7 +82,7 @@ impl<'a, R: 'static, A0: ConvertArg> LibstdCppFnOnce<'a, fn(A0) -> R> {
 impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg> LibstdCppFnOnce<'a, fn(A0, A1) -> R> {
     #[inline]
     pub(crate) fn new<D: 'a>(data: D, f: fn(D, A0::Rust<'_>, A1::Rust<'_>) -> R) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
+        let functor = Functor::from_data_and_fn(data, unsafe {
             core::mem::transmute::<*const (), PunFn<'a>>(f as *const ())
         });
         let invoker = unsafe {
@@ -124,9 +122,8 @@ impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg, A2: ConvertArg>
         data: D,
         f: fn(D, A0::Rust<'_>, A1::Rust<'_>, A2::Rust<'_>) -> R,
     ) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(fn_once::f3::<D, R, A0, A1, A2> as *const ())
         };
@@ -162,9 +159,8 @@ impl<'a, R: 'static, A0: ConvertArg, A1: ConvertArg, A2: ConvertArg, A3: Convert
         data: D,
         f: fn(D, A0::Rust<'_>, A1::Rust<'_>, A2::Rust<'_>, A3::Rust<'_>) -> R,
     ) -> Self {
-        let functor = CapturedData::from_data_and_fn(data, unsafe {
-            core::mem::transmute::<_, PunFn<'a>>(f)
-        });
+        let functor =
+            Functor::from_data_and_fn(data, unsafe { core::mem::transmute::<_, PunFn<'a>>(f) });
         let invoker = unsafe {
             core::mem::transmute::<_, Invoker<Self>>(
                 fn_once::f4::<D, R, A0, A1, A2, A3> as *const (),

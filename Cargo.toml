@@ -3,4 +3,11 @@ name = "cxxfn"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+# Enables C++ RTTI generation related APIs. Currently RTTI type_info is not created, so null pointers are returned.
+rtti = []
+# Enables the `_LIBCPP_ABI_OPTIMIZED_FUNCTION` flag. This only affects libcpp builds.
+libcpp_optimized_function = []
+
+
 [dependencies]

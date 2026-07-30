@@ -6,6 +6,5 @@ use crate::libcpp::LibcppFunctionVtable;
 pub(crate) struct LibCppFn<'a, F: 'static + Copy> {
     vtable: *const LibcppFunctionVtable<Self>,
     data: [u64; 3],
-    _lt: PhantomData<&'a ()>,
-    _marker: PhantomData<F>,
+    _marker: PhantomData<(&'a (), F)>,
 }
